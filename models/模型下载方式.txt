@@ -1,0 +1,20 @@
+cd models
+
+wget https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17.tar.bz2
+
+tar xvf sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17.tar.bz2
+rm sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17.tar.bz2
+
+
+# After downloading, you should find the following files:
+
+ls -lh sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17
+
+total 1.1G
+-rw-r--r-- 1 runner docker   71 Jul 18 13:06 LICENSE
+-rw-r--r-- 1 runner docker  104 Jul 18 13:06 README.md
+-rwxr-xr-x 1 runner docker 5.8K Jul 18 13:06 export-onnx.py
+-rw-r--r-- 1 runner docker 229M Jul 18 13:06 model.int8.onnx
+-rw-r--r-- 1 runner docker 895M Jul 18 13:06 model.onnx
+drwxr-xr-x 2 runner docker 4.0K Jul 18 13:06 test_wavs
+-rw-r--r-- 1 runner docker 309K Jul 18 13:06 tokens.txt

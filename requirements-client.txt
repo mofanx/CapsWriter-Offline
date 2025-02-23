@@ -1,0 +1,11 @@
+rich
+keyboard
+pyclip
+numpy
+sounddevice
+websockets==13.1
+pypinyin
+watchdog
+typer
+srt
+colorama

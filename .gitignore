@@ -1,0 +1,6 @@
+# 排除所有 .log 文件
+*.log
+
+
+# 排除 python 缓存文件夹
+__pycache__/

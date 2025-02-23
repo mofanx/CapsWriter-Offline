@@ -1,0 +1,5 @@
+rich
+websockets==13.1
+numpy
+typeguard
+sherpa_onnx
