@@ -1,4 +1,4 @@
-name: capswriter_02
+name: capswriter
 channels:
   - conda-forge
   - defaults
