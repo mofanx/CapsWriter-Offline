@@ -84,8 +84,13 @@ def recognize(recognizer, task: Task):
     result.tokens += [token for token in stream.result.tokens[m:n]]
 
     # token 合并为文本
-    text = ' '.join(result.tokens).replace('@@ ', '')
-    text = re.sub('([^a-zA-Z0-9]) (?![a-zA-Z0-9])', r'\1', text)
+    # text = ' '.join(result.tokens).replace('@@ ', '')
+    # text = re.sub('([^a-zA-Z0-9]) (?![a-zA-Z0-9])', r'\1', text)
+
+
+    # 使用sensevoice 不需要额外处理
+    text = ''.join(result.tokens)
+
 
     result.text = text
 

@@ -7,14 +7,14 @@ class ServerConfig:
     addr = '0.0.0.0'
     port = '6016'
 
-    format_num = True  # 输出时是否将中文数字转为阿拉伯数字
-    format_punc = True  # 输出时是否启用标点符号引擎
-    format_spell = True  # 输出时是否调整中英之间的空格
+    format_num = False  # 输出时是否将中文数字转为阿拉伯数字
+    format_punc = False  # 输出时是否启用标点符号引擎
+    format_spell = False  # 输出时是否调整中英之间的空格
 
 
 # 客户端配置
 class ClientConfig:
-    addr = '127.0.0.1'          # Server 地址
+    addr = '192.168.123.181'          # Server 地址
     port = '6016'               # Server 端口
 
     shortcut     = 'caps lock'  # 控制录音的快捷键，默认是 CapsLock
@@ -28,10 +28,10 @@ class ClientConfig:
     paste        = True         # 是否以写入剪切板然后模拟 Ctrl-V 粘贴的方式输出结果
     restore_clip = True         # 模拟粘贴后是否恢复剪贴板
 
-    save_audio = True           # 是否保存录音文件
+    save_audio = False           # 是否保存录音文件
     audio_name_len = 20         # 将录音识别结果的前多少个字存储到录音文件名中，建议不要超过200
 
-    trash_punc = '，。,.'        # 识别结果要消除的末尾标点
+    trash_punc = '。'        # 识别结果要消除的末尾标点
 
     hot_zh = True               # 是否启用中文热词替换，中文热词存储在 hot_zh.txt 文件里
     多音字 = True                  # True 表示多音字匹配
