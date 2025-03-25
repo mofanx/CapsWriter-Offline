@@ -84,12 +84,24 @@ Apple
 Audition
 AutoCAD
 App
-
+AlphaGo
+AlphaZero
+Anthropic
+AGI
+API
+AutoML
+AWS
 
 # B开头
 Bandizip
 BIOS
 Blender
+BERT
+Baidu
+Bard
+BigQuery
+Blockchain
+Byte
 
 # C开头
 CAD
@@ -107,6 +119,13 @@ Creative Cloud
 Cubase
 ChatGPT
 CapsWriter
+Claude
+Cohere
+CUDA
+CNN
+Computer Vision
+Cloud Computing
+Copilot
 
 # D开头
 Dell
@@ -114,6 +133,12 @@ Dolby
 Dropbox
 Directory OPUS
 DeepSeek
+DeepMind
+Docker
+Data Science
+DNN
+Diffusion
+DALL-E
 
 # E开头
 Edge
@@ -123,6 +148,9 @@ EU
 Evernote
 Excel
 EXIF
+Embeddings
+EleutherAI
+Ethereum
 
 # F开头
 Facebook
@@ -133,6 +161,9 @@ Figma
 Final Cut Pro
 Firefox
 FTP
+FLAC
+Fine-tuning
+Falcon
 
 # G开头
 GDP
@@ -145,9 +176,18 @@ Google Slides
 GPT
 GUI
 GPU
+Gemini
+GAN
+GitLab
+GraphQL
 
 # H开头
 HD
+HuggingFace
+HTML
+Hadoop
+HPC
+Huawei
 
 # I开头
 IBM
@@ -157,15 +197,23 @@ InDesign
 Instagram
 Intel
 iPhone
-
+IoT
+IDE
+Inference
 
 # J开头
 Java
 JavaScript
+JSON
+Jupyter
+JPEG
+Jenkins
 
 # K开头
 Kotlin
 KPI
+Kubernetes
+Keras
 
 # L开头
 Lightroom
@@ -173,11 +221,23 @@ LinkedIn
 Linux
 Logic Pro
 Lua
+Llama
+LLM
+LangChain
+LLaMA
 
 # M开头
 Maya
 Microsoft
 Markdown
+Meta
+Machine Learning
+MNIST
+MLOps
+Midjourney
+MongoDB
+MATLAB
+MistralAI
 
 # N开头
 NASA
@@ -186,6 +246,11 @@ Notepad
 Notion
 NSA
 NVIDIA
+NLP
+Neural Network
+Node.js
+NoSQL
+NVMe
 
 # O开头
 OBS
@@ -194,6 +259,10 @@ OneNote
 OpenAI
 Oracle
 Outlook
+Ollama
+OpenCV
+Object Detection
+OpenSource
 
 # P开头
 Photoshop
@@ -205,9 +274,18 @@ PPT
 Premiere Pro
 Pro Tools
 Python
+PyCharm
+Playwright
+PyTorch
+PaLM
+Perplexity
+Prompt Engineering
 
 # Q开头
 QQ
+QEMU
+QR
+Quantization
 
 # R开头
 RAM
@@ -216,6 +294,12 @@ Reddit
 RGB
 Ruby
 Rust
+RNN
+RAG
+RPA
+Redis
+REST API
+Reinforcement Learning
 
 # S开头
 Sketch
@@ -225,6 +309,13 @@ Snapchat
 SolidWorks
 SSD
 Steam
+SenseVoice
+SQL
+Stable Diffusion
+Semantic Search
+SVG
+Sora
+SaaS
 
 # T开头
 Teams
@@ -235,6 +326,12 @@ Trello
 TV
 Twitter
 TypeScript
+Transformer
+TensorFlow
+Transfer Learning
+TPU
+Token
+Tokenizer
 
 # U开头
 Uber
@@ -243,12 +340,20 @@ UI
 UNESCO
 UNICEF
 USB
+URL
+UX
+Ubuntu
+Unix
 
 # V开头
 VIP
 VPN
 VR
 VRChat
+Vue.js
+Vector Database
+Vimeo
+Visual Studio Code
 
 # W开头
 WeChat
@@ -261,13 +366,22 @@ Wix
 Word
 WordPress
 WTO
+WebAssembly
+WebGL
 
 # X开头
 Xbox
 XD
+XML
+XGBoost
+XPath
 
 # Y开头
 YouTube
+YAML
+YOLOv8
 
 # Z开头
 Zoom
+Zero-shot Learning
+ZIP
