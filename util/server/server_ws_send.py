@@ -2,10 +2,12 @@ import json
 import base64
 import asyncio
 from multiprocessing import Queue
+import queue
 
 from util.server.server_cosmic import console, Cosmic
 from util.server.server_classes import Result
 from util.tools.asyncio_to_thread import to_thread
+from util.common.lifecycle import lifecycle
 from . import logger
 from rich import inspect
 
@@ -21,7 +23,11 @@ async def ws_send():
     while True:
         try:
             # 获取识别结果（从多进程队列）
-            result: Result = await to_thread(queue_out.get)
+            if lifecycle.is_shutting_down:
+                logger.info("检测到退出请求，停止发送任务")
+                return
+
+            result: Result = await to_thread(queue_out.get, timeout=0.5)
 
             # 得到退出的通知
             if result is None:
@@ -65,6 +71,13 @@ async def ws_send():
                 if result.is_final:
                     console.print('\n    [green]转录完成')
                     logger.info(f"文件转录完成，任务ID: {result.task_id}, 总时长: {result.duration:.2f}s")
+
+        except asyncio.CancelledError:
+            logger.info("WebSocket 发送任务已取消")
+            raise
+
+        except queue.Empty:
+            continue
 
         except Exception as e:
             logger.error(f"发送结果时发生错误: {e}", exc_info=True)

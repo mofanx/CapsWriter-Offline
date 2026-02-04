@@ -10,9 +10,10 @@
 """
 import time
 from concurrent.futures import ThreadPoolExecutor
+from platform import system
 from typing import TYPE_CHECKING, Dict, List, Optional
 
-from pynput import keyboard, mouse
+import keyboard as keyboard_lib
 
 from . import logger
 from util.client.shortcut.key_mapper import *
@@ -46,9 +47,15 @@ class ShortcutManager:
         self.state = state
         self.shortcuts = shortcuts
 
-        # 监听器
-        self.keyboard_listener: Optional[keyboard.Listener] = None
-        self.mouse_listener: Optional[mouse.Listener] = None
+        self._is_windows = system() == 'Windows'
+
+        self.keyboard_listener = None
+        self.mouse_listener = None
+
+        self._keyboard_hooks = []
+        self._combo_hook = None
+        self._pressed_keys = set()
+        self._combo_defs = []
 
         # 快捷键任务映射（key -> ShortcutTask）
         self.tasks: Dict[str, ShortcutTask] = {}
@@ -118,6 +125,94 @@ class ShortcutManager:
             return True
 
         return win32_event_filter
+
+    # ========== 非 Windows 监听回调 ==========
+
+    def _keyboard_keydown(self, key_name: str) -> None:
+        if self._emulator.is_emulating(key_name):
+            return
+        if self.is_restoring(key_name):
+            return
+
+        task = self.tasks.get(key_name)
+        if not task:
+            return
+
+        self._event_handler.handle_keydown(key_name, task)
+
+    def _keyboard_keyup(self, key_name: str) -> None:
+        if self._emulator.is_emulating(key_name):
+            self._emulator.clear_emulating_flag(key_name)
+            return
+
+        if self.is_restoring(key_name):
+            self.clear_restoring_flag(key_name)
+            return
+
+        task = self.tasks.get(key_name)
+        if not task:
+            return
+
+        self._event_handler.handle_keyup(key_name, task)
+
+    def _setup_keyboard_lib_hooks(self) -> None:
+        self._keyboard_hooks = []
+        self._combo_defs = []
+        self._pressed_keys = set()
+        self._combo_hook = None
+
+        for shortcut in self.shortcuts:
+            if not shortcut.enabled:
+                continue
+            if shortcut.type != 'keyboard':
+                continue
+
+            key = shortcut.key
+            if '+' in key:
+                parts = [p.strip() for p in key.split('+') if p.strip()]
+                combo_keys = {KeyMapper.internal_to_keyboard_lib_name(p) for p in parts}
+                self._combo_defs.append({'key': key, 'keys': combo_keys, 'active': False, 'suppress': shortcut.suppress})
+                continue
+
+            lib_name = KeyMapper.internal_to_keyboard_lib_name(key)
+
+            def _press_cb(e, key_name=key):
+                _ = e
+                self._keyboard_keydown(key_name)
+
+            def _release_cb(e, key_name=key):
+                _ = e
+                self._keyboard_keyup(key_name)
+
+            press_hook = keyboard_lib.on_press_key(lib_name, _press_cb, suppress=shortcut.suppress)
+            release_hook = keyboard_lib.on_release_key(lib_name, _release_cb, suppress=shortcut.suppress)
+            self._keyboard_hooks.append(press_hook)
+            self._keyboard_hooks.append(release_hook)
+
+        if self._combo_defs:
+            if any(c['suppress'] for c in self._combo_defs):
+                logger.warning('keyboard 库在组合键模式下无法精确 suppress，将忽略组合键的 suppress 配置')
+
+            def _combo_hook_cb(e):
+                if not e.name:
+                    return
+                name = str(e.name).lower()
+
+                if e.event_type == 'down':
+                    self._pressed_keys.add(name)
+                elif e.event_type == 'up':
+                    self._pressed_keys.discard(name)
+
+                for combo in self._combo_defs:
+                    active_now = combo['keys'].issubset(self._pressed_keys)
+                    if active_now and not combo['active']:
+                        combo['active'] = True
+                        self._keyboard_keydown(combo['key'])
+                    elif (not active_now) and combo['active']:
+                        combo['active'] = False
+                        self._keyboard_keyup(combo['key'])
+
+            self._combo_hook = keyboard_lib.hook(_combo_hook_cb, suppress=False)
 
     def create_mouse_filter(self):
         """创建鼠标事件过滤器"""
@@ -191,17 +286,13 @@ class ShortcutManager:
         注意：标志清除只在按键释放事件中处理（_check_restoring），
         避免在线程中提前清除导致主线程收到重复消息。
         """
-        from pynput import keyboard
-
         self._restoring_keys.add(key)
 
         def do_restore():
             import time
             time.sleep(0.05)  # 延迟 50ms
-            if key == 'caps_lock':
-                controller = keyboard.Controller()
-                controller.press(keyboard.Key.caps_lock)
-                controller.release(keyboard.Key.caps_lock)
+            self._emulator.emulate_key(key)
+            self.clear_restoring_flag(key)
 
         self._pool.submit(do_restore)
 
@@ -247,19 +338,33 @@ class ShortcutManager:
         has_keyboard = any(s.type == 'keyboard' for s in self.shortcuts if s.enabled)
         has_mouse = any(s.type == 'mouse' for s in self.shortcuts if s.enabled)
 
-        if has_keyboard:
-            self.keyboard_listener = keyboard.Listener(
-                win32_event_filter=self.create_keyboard_filter()
-            )
-            self.keyboard_listener.start()
-            logger.info("键盘监听器已启动")
+        if self._is_windows:
+            if has_keyboard:
+                from pynput import keyboard
+                self.keyboard_listener = keyboard.Listener(
+                    win32_event_filter=self.create_keyboard_filter()
+                )
+                self.keyboard_listener.start()
+                logger.info("键盘监听器已启动")
 
-        if has_mouse:
-            self.mouse_listener = mouse.Listener(
-                win32_event_filter=self.create_mouse_filter()
-            )
-            self.mouse_listener.start()
-            logger.info("鼠标监听器已启动")
+            if has_mouse:
+                from pynput import mouse
+                self.mouse_listener = mouse.Listener(
+                    win32_event_filter=self.create_mouse_filter()
+                )
+                self.mouse_listener.start()
+                logger.info("鼠标监听器已启动")
+        else:
+            if has_mouse:
+                logger.warning('keyboard 库不支持鼠标侧键监听，已忽略鼠标快捷键配置')
+
+            if has_keyboard:
+                try:
+                    self._setup_keyboard_lib_hooks()
+                    logger.info('键盘监听器已启动')
+                except Exception as e:
+                    logger.error(f'启动 keyboard 快捷键监听失败: {e}')
+                    raise
 
         # 打印所有启用的快捷键
         for shortcut in self.shortcuts:
@@ -270,13 +375,28 @@ class ShortcutManager:
 
     def stop(self) -> None:
         """停止所有监听器和清理资源"""
-        if self.keyboard_listener:
-            self.keyboard_listener.stop()
-            logger.debug("键盘监听器已停止")
+        if self._is_windows:
+            if self.keyboard_listener:
+                self.keyboard_listener.stop()
+                logger.debug("键盘监听器已停止")
 
-        if self.mouse_listener:
-            self.mouse_listener.stop()
-            logger.debug("鼠标监听器已停止")
+            if self.mouse_listener:
+                self.mouse_listener.stop()
+                logger.debug("鼠标监听器已停止")
+        else:
+            for h in list(self._keyboard_hooks):
+                try:
+                    keyboard_lib.unhook(h)
+                except Exception:
+                    pass
+            self._keyboard_hooks = []
+
+            if self._combo_hook is not None:
+                try:
+                    keyboard_lib.unhook(self._combo_hook)
+                except Exception:
+                    pass
+                self._combo_hook = None
 
         # 取消所有任务
         for task in self.tasks.values():

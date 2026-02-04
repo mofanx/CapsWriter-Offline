@@ -5,7 +5,7 @@
 负责异步模拟键盘和鼠标按键输入
 """
 
-from pynput import keyboard, mouse
+import keyboard as keyboard_lib
 from . import logger
 from util.client.shortcut.key_mapper import KeyMapper
 
@@ -20,8 +20,6 @@ class ShortcutEmulator:
 
     def __init__(self):
         """初始化模拟器"""
-        self._keyboard_controller = keyboard.Controller()
-        self._mouse_controller = mouse.Controller()
         self._emulating_keys = set()
 
     def is_emulating(self, key_name: str) -> bool:
@@ -41,13 +39,12 @@ class ShortcutEmulator:
         """
         self._emulating_keys.add(key_name)
 
-        key_obj = KeyMapper.name_to_key(key_name)
-        if key_obj is not None:
-            self._keyboard_controller.press(key_obj)
-            self._keyboard_controller.release(key_obj)
+        lib_name = KeyMapper.internal_to_keyboard_lib_name(key_name)
+        try:
+            keyboard_lib.press_and_release(lib_name)
             logger.debug(f"[{key_name}] 补发按键成功")
-        else:
-            logger.warning(f"[{key_name}] 无法识别的按键，跳过补发")
+        except Exception as e:
+            logger.warning(f"[{key_name}] 补发按键失败: {e}")
 
     def emulate_mouse_click(self, button_name: str) -> None:
         """
@@ -58,16 +55,4 @@ class ShortcutEmulator:
         """
         self._emulating_keys.add(button_name)
 
-        # pynput 鼠标按键对象映射
-        button_map = {
-            'x1': mouse.Button.x1,
-            'x2': mouse.Button.x2
-        }
-
-        if button_name in button_map:
-            button = button_map[button_name]
-            self._mouse_controller.press(button)
-            self._mouse_controller.release(button)
-            logger.debug(f"[{button_name}] 补发鼠标按键成功")
-        else:
-            logger.warning(f"[{button_name}] 无法识别的鼠标按键，跳过补发")
+        logger.warning(f"[{button_name}] keyboard 库不支持鼠标按键模拟，跳过补发")

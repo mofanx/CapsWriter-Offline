@@ -132,9 +132,17 @@ def init_llama_lib():
     global llama_vocab_n_tokens, llama_vocab_eos, llama_token_to_piece
     global _log_callback_ref
 
-    ggml = ctypes.CDLL("./ggml.dll")
-    ggml_base = ctypes.CDLL("./ggml-base.dll")
-    llama = ctypes.CDLL("./llama.dll")
+    # 如果系统是windows
+    if os.name == 'nt':
+        ggml = ctypes.CDLL("./ggml.dll")
+        ggml_base = ctypes.CDLL("./ggml-base.dll")
+        llama = ctypes.CDLL("./llama.dll")
+
+    # 如果系统是linux
+    elif os.name == 'posix':
+        ggml = ctypes.CDLL("./libggml.so")
+        ggml_base = ctypes.CDLL("./libggml-base.so")
+        llama = ctypes.CDLL("./libllama.so")
 
     # 先设置日志回调（在加载 backend 之前）
     LOG_CALLBACK = ctypes.CFUNCTYPE(None, ctypes.c_int, ctypes.c_char_p, ctypes.c_void_p)

@@ -46,15 +46,15 @@ async def run_websocket_server():
     """运行 WebSocket 服务器"""
     loop = asyncio.get_running_loop()
     
-    # 1. 更新生命周期管理器的事件循环
-    lifecycle._loop = loop
+    # 1. 更新生命周期管理器的事件循环（同时确保 shutdown_event 已创建）
+    lifecycle.initialize(loop=loop, logger=logger, exit_on_signal=False)
     # 如果在启动前就已请求退出（例如启动时按了 Ctrl+C），则不再启动服务
     if lifecycle.is_shutting_down:
         logger.info("检测到退出标记，停止启动")
         return
 
-    from util.concurrency.daemon_executor import SimpleDaemonExecutor
-    loop.set_default_executor(SimpleDaemonExecutor())
+    from util.concurrency.daemon_executor import DaemonThreadPoolExecutor
+    loop.set_default_executor(DaemonThreadPoolExecutor())
 
     # 清空物理内存工作集
     if system() == 'Windows':
@@ -73,7 +73,8 @@ async def run_websocket_server():
         # 3. 等待退出信号
         # 如果已经处于 shutting down 状态，ensure event is set
         if lifecycle.is_shutting_down:
-            lifecycle._shutdown_event.set()
+            if lifecycle._shutdown_event:
+                lifecycle._shutdown_event.set()
 
         wait_shutdown_task = asyncio.create_task(lifecycle.wait_for_shutdown())
 

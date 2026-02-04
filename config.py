@@ -55,10 +55,10 @@ class ClientConfig:
 
     threshold    = 0.3          # 快捷键触发阈值（秒）
 
-    paste        = False        # 是否以写入剪切板然后模拟 Ctrl-V 粘贴的方式输出结果
+    paste        = True        # 是否以写入剪切板然后模拟 Ctrl-V 粘贴的方式输出结果
     restore_clip = True         # 模拟粘贴后是否恢复剪贴板
 
-    save_audio = True           # 是否保存录音文件
+    save_audio = False           # 是否保存录音文件
     audio_name_len = 20         # 将录音识别结果的前多少个字存储到录音文件名中，建议不要超过200
     
     context = ''                # 提示词上下文，用于辅助 Fun-ASR-Nano 模型识别（例如输入人名、地名、专业术语等）

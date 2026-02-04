@@ -122,6 +122,10 @@ A: 加入 GPU 支持会增加打包大小，且边际效益很低，没有做。
 **Q: 低性能电脑转录太慢？**  
 A: 更改 `config.py` 中的 `model_type` 模型类型，或更改 `util/model_config.py` 中的 `num_threads`。
 
+**Q: fun_asr_gguf源码运行时初始化报错？**  
+A: 需要根据平台类型下载对应压缩包并解压到`util/fun_asr_gguf/bin/`文件夹下，二进制下载地址：https://github.com/ggml-org/llama.cpp/releases/
+
+
 ## 🚀 我的其他优质项目推荐
 
 | 项目名称 | 说明 | 体验地址 |

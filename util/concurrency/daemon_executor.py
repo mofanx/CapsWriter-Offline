@@ -1,6 +1,13 @@
 
 import threading
+import weakref
 from concurrent.futures.thread import ThreadPoolExecutor
+
+try:
+    from concurrent.futures.thread import _worker, _threads_queues
+except Exception:  # pragma: no cover
+    _worker = None
+    _threads_queues = None
 
 class DaemonThreadPoolExecutor(ThreadPoolExecutor):
     """
@@ -22,17 +29,56 @@ class DaemonThreadPoolExecutor(ThreadPoolExecutor):
         # ThreadPoolExecutor 在 submit 时创建线程并立即 start。
         # 所以我们无法通过 initializer 来设置 daemon=True，因为此时线程已经 start 了。
         
-        # 因此，我们需要使用一个稍微不同的方法：
-        # 我们不继承 ThreadPoolExecutor，而是修改它的 behavior。
-        # 或者，更简单地，我们在创建时 hack 一下？
-        
-        # 在 Python 中，ThreadPoolExecutor 使用 threading.Thread 创建线程。
-        # 只要我们在创建线程时将其设为 Daemon 即可。
-        # 但 ThreadPoolExecutor 没有暴露这个接口。
-        
-        # 既然无法简单继承，我们可以使用一个更简单的方案：
-        # 只要让 loop.run_in_executor 使用的线程是 daemon 即可。
-        pass
+        super().__init__(
+            max_workers=max_workers,
+            thread_name_prefix=thread_name_prefix,
+            initializer=initializer,
+            initargs=initargs,
+        )
+
+    def _adjust_thread_count(self):
+        if _worker is None:
+            return super()._adjust_thread_count()
+
+        try:
+            acquired = self._idle_semaphore.acquire(timeout=0)
+        except TypeError:
+            acquired = self._idle_semaphore.acquire(False)
+
+        if acquired:
+            return
+
+        def weakref_cb(_, q=self._work_queue):
+            q.put(None)
+
+        if len(self._threads) < self._max_workers:
+            thread_name = '%s_%d' % (self._thread_name_prefix, len(self._threads))
+            t = threading.Thread(
+                name=thread_name,
+                target=_worker,
+                args=(weakref.ref(self, weakref_cb), self._work_queue, self._initializer, self._initargs),
+            )
+            t.daemon = True
+            t.start()
+            self._threads.add(t)
+            if _threads_queues is not None:
+                _threads_queues[t] = self._work_queue
+
+    def shutdown(self, wait=True, *args, **kwargs):
+        """
+        asyncio.run() 在退出时会调用 loop.shutdown_default_executor()，
+        内部会对默认 executor 执行 shutdown(wait=True)。
+
+        但本项目的默认 executor 经常承载 run_in_executor(to_thread) 的阻塞调用
+        （例如 multiprocessing.Queue.get），这些调用无法被线程池“中断”。
+        若这里等待线程结束，会导致服务端卡住无法退出。
+
+        因此这里强制使用 wait=False，使退出行为与旧的 SimpleDaemonExecutor 一致。
+        """
+        try:
+            return super().shutdown(wait=False, *args, **kwargs)
+        except TypeError:
+            return super().shutdown(False)
 
 # 重新思考：
 # 实际上，asyncio 提供的 loop.set_default_executor() 接受任何 executor。

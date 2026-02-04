@@ -184,6 +184,9 @@ async def ws_recv(websocket) -> None:
     except websockets.InvalidState:
         console.print("InvalidState...")
         logger.error(f"WebSocket 状态异常: {socket_id}")
+    except asyncio.CancelledError:
+        logger.info(f"WebSocket 接收任务已取消: {socket_id}")
+        raise
     except Exception as e:
         console.print("Exception:", e)
         logger.error(f"WebSocket 接收异常，客户端ID {socket_id}: {e}", exc_info=True)

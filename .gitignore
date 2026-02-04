@@ -149,6 +149,9 @@ cython_debug/
 models/*/*/
 models/*.py
 
+# fun_asr_gguf/bin 文件夹
+util/fun_asr_gguf/bin/
+
 # 日志与按年归档的文件夹（如 2026/01/...）
 20*/
 

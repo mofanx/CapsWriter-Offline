@@ -16,6 +16,15 @@ from util.llm.llm_stop_monitor import reset, should_stop
 from . import logger
 
 
+def _try_keyboard_write(text: str) -> bool:
+    try:
+        keyboard.write(text)
+        return True
+    except Exception as e:
+        logger.warning(f"keyboard.write failed, fallback to paste. err={e}")
+        return False
+
+
 async def handle_typing_mode(text: str, paste: bool = None, matched_hotwords=None, role_config=None, content=None) -> tuple:
     """打字输出模式"""
     from util.llm.llm_handler import get_handler
@@ -50,9 +59,13 @@ async def handle_typing_mode(text: str, paste: bool = None, matched_hotwords=Non
             # 流式打字方式
             chunks = []
             pending_buffer = ""
+            wrote_text = ""
+            fallback_to_paste = False
 
             def stream_write_chunk(chunk: str):
                 nonlocal pending_buffer
+                nonlocal wrote_text
+                nonlocal fallback_to_paste
                 if not chunk: return
                 chunks.append(chunk)
 
@@ -77,8 +90,12 @@ async def handle_typing_mode(text: str, paste: bool = None, matched_hotwords=Non
                     # 使用 keyboard.write 替代 pynput controller.type
                     # 避免与中文输入法冲突
                     logger.debug(f"output_text: keyboard.write '{content_to_write}'")
-                    keyboard.write(content_to_write)
-                    pending_buffer = trailing
+                    if not fallback_to_paste and _try_keyboard_write(content_to_write):
+                        wrote_text += content_to_write
+                        pending_buffer = trailing
+                    else:
+                        fallback_to_paste = True
+                        pending_buffer = full_current
                 else:
                     pending_buffer = trailing
 
@@ -95,11 +112,21 @@ async def handle_typing_mode(text: str, paste: bool = None, matched_hotwords=Non
                 # 降级
                 final_text = TextOutput.strip_punc(content)
                 logger.debug(f"output_text: keyboard.write '{final_text}' (降级)")
-                keyboard.write(final_text)
+                if not _try_keyboard_write(final_text):
+                    await paste_text(final_text, restore_clipboard=Config.restore_clip)
                 return (final_text, 0, 0.0)
             
+            final_text = TextOutput.strip_punc(polished_text)
+            if fallback_to_paste:
+                if wrote_text and final_text.startswith(wrote_text):
+                    remaining = final_text[len(wrote_text):]
+                else:
+                    remaining = final_text
+                if remaining:
+                    await paste_text(remaining, restore_clipboard=Config.restore_clip)
+
             # 注意：末尾的 pending_buffer 包含的是垃圾字符，按设计要求不输出
-            return (TextOutput.strip_punc(polished_text), token_count, gen_time)
+            return (final_text, token_count, gen_time)
 
     except Exception as e:
         result_text, _ = handle_llm_error(e, content, role_config.name if role_config else "LLM")
@@ -115,4 +142,5 @@ async def output_text(text: str, paste: bool = None):
     else:
         # 使用 keyboard.write 替代 pynput controller.type
         logger.debug(f"output_text: keyboard.write '{text}'")
-        keyboard.write(text)
+        if not _try_keyboard_write(text):
+            await paste_text(text, restore_clipboard=Config.restore_clip)

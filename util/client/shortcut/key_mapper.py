@@ -5,19 +5,27 @@
 处理按键名称和虚拟键码之间的转换，以及相关常量定义
 """
 
-from pynput import keyboard
-from pynput._util.win32 import KeyTranslator
+from platform import system
+from typing import Optional
+
 from . import logger
 
 
-# 创建键盘翻译器实例（用于 VK 到字符的转换）
-_key_translator = KeyTranslator()
+_IS_WINDOWS = system() == 'Windows'
 
-# 特殊键 VK 映射（从 pynput 复制）
-_SPECIAL_KEYS = {
-    key.value.vk: key
-    for key in keyboard.Key
-}
+if _IS_WINDOWS:
+    from pynput import keyboard as pynput_keyboard
+    from pynput._util.win32 import KeyTranslator
+
+    # 创建键盘翻译器实例（用于 VK 到字符的转换）
+    _key_translator = KeyTranslator()
+
+    # 特殊键 VK 映射（从 pynput 复制）
+    _SPECIAL_KEYS = {key.value.vk: key for key in pynput_keyboard.Key}
+else:
+    _key_translator = None
+    _SPECIAL_KEYS = {}
+    pynput_keyboard = None
 
 # 小键盘按键映射（VK -> 名称）
 NUMPAD_KEYS = {
@@ -32,23 +40,32 @@ NUMPAD_KEYS = {
     0x6F: 'numpad_divide',    # /
 }
 
-# Windows 键盘消息常量
-WM_KEYDOWN = 0x0100
-WM_KEYUP = 0x0101
-WM_SYSKEYDOWN = 0x0104
-WM_SYSKEYUP = 0x0105
+if _IS_WINDOWS:
+    # Windows 键盘消息常量
+    WM_KEYDOWN = 0x0100
+    WM_KEYUP = 0x0101
+    WM_SYSKEYDOWN = 0x0104
+    WM_SYSKEYUP = 0x0105
 
-# Windows 鼠标消息常量
-WM_XBUTTONDOWN = 0x020B
-WM_XBUTTONUP = 0x020C
-XBUTTON1 = 0x0001
-XBUTTON2 = 0x0002
+    # Windows 鼠标消息常量
+    WM_XBUTTONDOWN = 0x020B
+    WM_XBUTTONUP = 0x020C
+    XBUTTON1 = 0x0001
+    XBUTTON2 = 0x0002
 
-# 按键消息集合
-KEYBOARD_MESSAGES = (WM_KEYDOWN, WM_KEYUP, WM_SYSKEYDOWN, WM_SYSKEYUP)
-KEY_UP_MESSAGES = (WM_KEYUP, WM_SYSKEYUP)
-KEY_DOWN_MESSAGES = (WM_KEYDOWN, WM_SYSKEYDOWN)
-MOUSE_MESSAGES = (WM_XBUTTONDOWN, WM_XBUTTONUP)
+    # 按键消息集合
+    KEYBOARD_MESSAGES = (WM_KEYDOWN, WM_KEYUP, WM_SYSKEYDOWN, WM_SYSKEYUP)
+    KEY_UP_MESSAGES = (WM_KEYUP, WM_SYSKEYUP)
+    KEY_DOWN_MESSAGES = (WM_KEYDOWN, WM_SYSKEYDOWN)
+    MOUSE_MESSAGES = (WM_XBUTTONDOWN, WM_XBUTTONUP)
+else:
+    WM_KEYDOWN = WM_KEYUP = WM_SYSKEYDOWN = WM_SYSKEYUP = -1
+    WM_XBUTTONDOWN = WM_XBUTTONUP = -1
+    XBUTTON1 = XBUTTON2 = -1
+    KEYBOARD_MESSAGES = ()
+    KEY_UP_MESSAGES = ()
+    KEY_DOWN_MESSAGES = ()
+    MOUSE_MESSAGES = ()
 
 # 可恢复的切换键（需要录音完成后恢复状态的锁键）
 RESTORABLE_KEYS = {
@@ -67,22 +84,25 @@ class KeyMapper:
     @classmethod
     def _get_special_key_objects(cls):
         """获取 pynput 特殊键对象（延迟初始化）"""
+        if not _IS_WINDOWS or pynput_keyboard is None:
+            return {}
+
         if cls._SPECIAL_KEY_OBJECTS is None:
             cls._SPECIAL_KEY_OBJECTS = {
-                'caps_lock': keyboard.Key.caps_lock,
-                'space': keyboard.Key.space,
-                'tab': keyboard.Key.tab,
-                'enter': keyboard.Key.enter,
-                'esc': keyboard.Key.esc,
-                'delete': keyboard.Key.delete,
-                'backspace': keyboard.Key.backspace,
-                'shift': keyboard.Key.shift,
-                'ctrl': keyboard.Key.ctrl,
-                'alt': keyboard.Key.alt,
-                'cmd': keyboard.Key.cmd,
-                'f1': keyboard.Key.f1, 'f2': keyboard.Key.f2, 'f3': keyboard.Key.f3, 'f4': keyboard.Key.f4,
-                'f5': keyboard.Key.f5, 'f6': keyboard.Key.f6, 'f7': keyboard.Key.f7, 'f8': keyboard.Key.f8,
-                'f9': keyboard.Key.f9, 'f10': keyboard.Key.f10, 'f11': keyboard.Key.f11, 'f12': keyboard.Key.f12,
+                'caps_lock': pynput_keyboard.Key.caps_lock,
+                'space': pynput_keyboard.Key.space,
+                'tab': pynput_keyboard.Key.tab,
+                'enter': pynput_keyboard.Key.enter,
+                'esc': pynput_keyboard.Key.esc,
+                'delete': pynput_keyboard.Key.delete,
+                'backspace': pynput_keyboard.Key.backspace,
+                'shift': pynput_keyboard.Key.shift,
+                'ctrl': pynput_keyboard.Key.ctrl,
+                'alt': pynput_keyboard.Key.alt,
+                'cmd': pynput_keyboard.Key.cmd,
+                'f1': pynput_keyboard.Key.f1, 'f2': pynput_keyboard.Key.f2, 'f3': pynput_keyboard.Key.f3, 'f4': pynput_keyboard.Key.f4,
+                'f5': pynput_keyboard.Key.f5, 'f6': pynput_keyboard.Key.f6, 'f7': pynput_keyboard.Key.f7, 'f8': pynput_keyboard.Key.f8,
+                'f9': pynput_keyboard.Key.f9, 'f10': pynput_keyboard.Key.f10, 'f11': pynput_keyboard.Key.f11, 'f12': pynput_keyboard.Key.f12,
             }
         return cls._SPECIAL_KEY_OBJECTS
 
@@ -97,6 +117,9 @@ class KeyMapper:
         Returns:
             str: 按键名称（与 Shortcut.key 格式一致）
         """
+        if not _IS_WINDOWS:
+            return f'vk_{vk}'
+
         # 首先检查是否是特殊键（pynput Key 枚举）
         if vk in _SPECIAL_KEYS:
             return _SPECIAL_KEYS[vk].name
@@ -117,6 +140,53 @@ class KeyMapper:
         return f'vk_{vk}'
 
     @staticmethod
+    def event_to_name(key) -> Optional[str]:
+        if not _IS_WINDOWS or pynput_keyboard is None:
+            return None
+
+        if isinstance(key, pynput_keyboard.Key):
+            return key.name
+
+        if isinstance(key, pynput_keyboard.KeyCode):
+            if key.char:
+                return str(key.char).lower()
+            return None
+
+        return None
+
+    @staticmethod
+    def internal_to_keyboard_lib_name(key_name: str) -> str:
+        name = key_name.strip().lower().replace('_', ' ')
+        aliases = {
+            'esc': 'esc',
+            'escape': 'esc',
+            'ctrl': 'ctrl',
+            'control': 'ctrl',
+            'cmd': 'windows',
+            'win': 'windows',
+            'caps lock': 'caps lock',
+            'capslock': 'caps lock',
+        }
+        return aliases.get(name, name)
+
+    @staticmethod
+    def keyboard_lib_name_to_internal(name: str) -> str:
+        if not name:
+            return ''
+
+        name = str(name).strip().lower()
+        aliases = {
+            'caps lock': 'caps_lock',
+            'capslock': 'caps_lock',
+            'left windows': 'cmd',
+            'right windows': 'cmd',
+            'windows': 'cmd',
+            'control': 'ctrl',
+        }
+        name = aliases.get(name, name)
+        return name.replace(' ', '_')
+
+    @staticmethod
     def name_to_key(key_name: str):
         """
         将按键名称转换为 pynput 按键对象
@@ -127,6 +197,9 @@ class KeyMapper:
         Returns:
             pynput 按键对象或 None
         """
+        if not _IS_WINDOWS or pynput_keyboard is None:
+            return None
+
         # 特殊按键
         special_keys = KeyMapper._get_special_key_objects()
         if key_name in special_keys:
@@ -134,7 +207,7 @@ class KeyMapper:
 
         # 单个字符按键
         if len(key_name) == 1:
-            return keyboard.KeyCode.from_char(key_name)
+            return pynput_keyboard.KeyCode.from_char(key_name)
 
         logger.warning(f"未知按键名称: {key_name}")
         return None

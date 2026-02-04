@@ -16,7 +16,7 @@ from __future__ import annotations
 import threading
 from typing import Callable, Dict, Optional
 
-from pynput import keyboard
+import keyboard as keyboard_lib
 
 from . import logger
 
@@ -51,10 +51,24 @@ class GlobalHotkeyManager:
             return
         
         self._hotkeys: Dict[str, Callable] = {}
-        self._listener: Optional[keyboard.GlobalHotKeys] = None
+        self._handles: Dict[str, int] = {}
         self._running = False
         self._initialized = True
         logger.debug("GlobalHotkeyManager 初始化完成")
+
+    @staticmethod
+    def _normalize_hotkey(key_str: str) -> str:
+        key_str = (key_str or '').strip().lower()
+        if not key_str:
+            return ''
+
+        key_str = key_str.replace('<', '').replace('>', '')
+        key_str = key_str.replace('cmd', 'windows')
+        key_str = key_str.replace('command', 'windows')
+        key_str = key_str.replace('control', 'ctrl')
+        key_str = key_str.replace(' ', '')
+        key_str = key_str.replace('+', '+')
+        return key_str
 
     def register(self, key_str: str, callback: Callable) -> None:
         """
@@ -107,35 +121,39 @@ class GlobalHotkeyManager:
     def stop(self) -> None:
         """停止快捷键监听"""
         self._running = False
-        if self._listener:
+        for k, handle in list(self._handles.items()):
             try:
-                self._listener.stop()
-            except Exception as e:
-                logger.warning(f"停止 GlobalHotKeys 监听器时出错: {e}")
-            self._listener = None
+                keyboard_lib.remove_hotkey(handle)
+            except Exception:
+                pass
+        self._handles.clear()
         logger.info("GlobalHotkeyManager 已停止")
 
     def _start_listener(self) -> None:
         """启动监听器"""
         if not self._hotkeys:
             return
-        
-        try:
-            self._listener = keyboard.GlobalHotKeys(self._hotkeys)
-            self._listener.start()
-            logger.debug(f"GlobalHotKeys 监听器已启动: {list(self._hotkeys.keys())}")
-        except Exception as e:
-            logger.error(f"启动 GlobalHotKeys 监听器失败: {e}")
-            self._listener = None
+
+        for key_str, cb in self._hotkeys.items():
+            normalized = self._normalize_hotkey(key_str)
+            if not normalized:
+                continue
+            try:
+                handle = keyboard_lib.add_hotkey(normalized, cb, suppress=False, trigger_on_release=False)
+                self._handles[key_str] = handle
+            except Exception as e:
+                logger.warning(f"注册全局快捷键失败: {key_str} ({normalized}) {e}")
+
+        logger.debug(f"全局快捷键监听已启动: {list(self._handles.keys())}")
 
     def _restart_listener(self) -> None:
         """重启监听器（用于更新快捷键后）"""
-        if self._listener:
+        for k, handle in list(self._handles.items()):
             try:
-                self._listener.stop()
+                keyboard_lib.remove_hotkey(handle)
             except Exception:
                 pass
-            self._listener = None
+        self._handles.clear()
         
         if self._running and self._hotkeys:
             self._start_listener()

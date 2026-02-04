@@ -13,7 +13,6 @@ from typing import Optional
 
 import keyboard
 import pyclip
-from pynput import keyboard as pynput_keyboard
 
 from config import ClientConfig as Config
 from . import logger
@@ -85,16 +84,12 @@ class TextOutput:
         # 复制结果
         pyclip.copy(text)
         
-        # 粘贴结果（使用 pynput 模拟 Ctrl+V）
-        controller = pynput_keyboard.Controller()
         if platform.system() == 'Darwin':
             # macOS: Command+V
-            with controller.pressed(pynput_keyboard.Key.cmd):
-                controller.tap('v')
+            keyboard.press_and_release('command+v')
         else:
             # Windows/Linux: Ctrl+V
-            with controller.pressed(pynput_keyboard.Key.ctrl):
-                controller.tap('v')
+            keyboard.press_and_release('ctrl+v')
         
         logger.debug("已发送粘贴命令 (Ctrl+V)")
         
@@ -115,4 +110,12 @@ class TextOutput:
             text: 要输出的文本
         """
         logger.debug(f"使用打字方式输出文本，长度: {len(text)}")
-        keyboard.write(text)
+        try:
+            keyboard.write(text)
+        except Exception as e:
+            logger.warning(f"keyboard.write failed, fallback to paste. err={e}")
+            pyclip.copy(text)
+            if platform.system() == 'Darwin':
+                keyboard.press_and_release('command+v')
+            else:
+                keyboard.press_and_release('ctrl+v')

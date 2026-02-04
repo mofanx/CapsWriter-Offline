@@ -42,7 +42,7 @@ class AudioStreamManager:
     """
     
     SAMPLE_RATE = 48000
-    BLOCK_DURATION = 0.05  # 50ms
+    BLOCK_DURATION = 0.02  # 50ms
     
     def __init__(self, state: 'ClientState'):
         """

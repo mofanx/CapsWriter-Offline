@@ -7,6 +7,7 @@
 
 import asyncio
 import time
+from platform import system
 from threading import Event
 from typing import TYPE_CHECKING, Optional
 
@@ -56,6 +57,9 @@ class ShortcutTask:
         # 录音状态动画
         self._status = Status('开始录音', spinner='point')
 
+        # 锁定键（CapsLock/NumLock/ScrollLock）状态恢复：记录触发前的状态
+        self._toggle_state_at_press: Optional[bool] = None
+
     def _get_recorder(self) -> 'AudioRecorder':
         """获取 AudioRecorder 实例"""
         if self._recorder_class is None:
@@ -66,6 +70,15 @@ class ShortcutTask:
     def launch(self) -> None:
         """启动录音任务"""
         logger.info(f"[{self.shortcut.key}] 触发：开始录音")
+
+        if self.shortcut.is_toggle_key() and system() != 'Windows':
+            try:
+                import keyboard as keyboard_lib
+                from util.client.shortcut.key_mapper import KeyMapper
+                lib_name = KeyMapper.internal_to_keyboard_lib_name(self.shortcut.key)
+                self._toggle_state_at_press = bool(keyboard_lib.is_toggled(lib_name))
+            except Exception:
+                self._toggle_state_at_press = None
 
         # 记录开始时间
         self.recording_start_time = time.time()
@@ -101,6 +114,9 @@ class ShortcutTask:
         self.task.cancel()
         self.task = None
 
+        if self.shortcut.is_toggle_key():
+            self._restore_key_if_needed()
+
     def finish(self) -> None:
         """完成录音任务"""
         logger.info(f"[{self.shortcut.key}] 释放：完成录音")
@@ -118,9 +134,32 @@ class ShortcutTask:
             self.state.loop
         )
 
-        # 执行 restore（可恢复按键 + 非阻塞模式）
-        # 阻塞模式下按键不会发送到系统，状态不会改变，不需要恢复
-        if self.shortcut.is_toggle_key() and not self.shortcut.suppress:
+        if self.shortcut.is_toggle_key():
+            self._restore_key_if_needed()
+
+    def _restore_key_if_needed(self) -> None:
+        """根据当前平台与锁定键状态决定是否需要恢复。"""
+        if system() == 'Windows':
+            # Windows 下 suppress 能可靠阻塞 CapsLock，维持原逻辑
+            if not self.shortcut.suppress:
+                self._restore_key()
+            return
+
+        # Linux/Wayland 下 suppress 可能无效，必须以实际 toggled 状态为准
+        try:
+            import keyboard as keyboard_lib
+            from util.client.shortcut.key_mapper import KeyMapper
+            lib_name = KeyMapper.internal_to_keyboard_lib_name(self.shortcut.key)
+            current = bool(keyboard_lib.is_toggled(lib_name))
+        except Exception:
+            current = None
+
+        if self._toggle_state_at_press is None or current is None:
+            # 无法读取状态时，宁可恢复一次，避免“按一下后状态被切走”的体验
+            self._restore_key()
+            return
+
+        if current != self._toggle_state_at_press:
             self._restore_key()
 
     def _restore_key(self) -> None:

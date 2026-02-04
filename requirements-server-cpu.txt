@@ -1,0 +1,18 @@
+# ASR core
+sherpa-onnx==1.12.20
+numpy
+gguf
+onnxruntime
+
+# basic
+rich
+websockets
+watchdog
+
+# tray and image
+pystray
+Pillow
+
+markdown
+tkhtmlview
+pypinyin

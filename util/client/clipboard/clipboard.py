@@ -12,7 +12,7 @@ import asyncio
 import platform
 from contextlib import contextmanager
 import pyclip
-from pynput import keyboard
+import keyboard
 from . import logger
 
 
@@ -120,16 +120,12 @@ async def paste_text(text: str, restore_clipboard: bool = True):
     pyclip.copy(text)
     logger.debug(f"已复制文本到剪贴板，长度: {len(text)}")
 
-    # 粘贴结果（使用 pynput 模拟 Ctrl+V）
-    controller = keyboard.Controller()
     if platform.system() == 'Darwin':
         # macOS: Command+V
-        with controller.pressed(keyboard.Key.cmd):
-            controller.tap('v')
+        keyboard.press_and_release('command+v')
     else:
         # Windows/Linux: Ctrl+V
-        with controller.pressed(keyboard.Key.ctrl):
-            controller.tap('v')
+        keyboard.press_and_release('ctrl+v')
     
     logger.debug("已发送粘贴命令 (Ctrl+V)")
 
