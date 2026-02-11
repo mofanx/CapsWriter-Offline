@@ -38,11 +38,11 @@ class AudioStreamManager:
     Attributes:
         state: 客户端状态实例
         sample_rate: 采样率（默认 48000Hz）
-        block_duration: 每个数据块的时长（秒，默认 0.05s）
+        block_duration: 每个数据块的时长（秒，默认 0.05s,如果录制的音频有变速，需要调整此值，比如，Ubuntu下可能需要调整为 0.02s）
     """
     
     SAMPLE_RATE = 48000
-    BLOCK_DURATION = 0.02  # 50ms
+    BLOCK_DURATION = 0.02  # 20ms
     
     def __init__(self, state: 'ClientState'):
         """

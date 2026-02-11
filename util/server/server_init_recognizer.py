@@ -1,14 +1,15 @@
 import time
+import sys
+import os 
 from multiprocessing import Queue
 import signal
 import atexit
 from platform import system
-from config import ServerConfig as Config
-from util.model_config import ParaformerArgs, ModelPaths, SenseVoiceArgs, FunASRNanoGGUFArgs
+from config_server import ServerConfig as Config
+from config_server import ParaformerArgs, ModelPaths, SenseVoiceArgs, FunASRNanoGGUFArgs
 from util.server.server_check_model import check_model
 from util.server.server_cosmic import console
 from util.server.server_recognize import recognize
-from util.tools.empty_working_set import empty_current_working_set
 from util.fun_asr_gguf import create_asr_engine
 
 from . import logger
@@ -47,11 +48,12 @@ def signal_handler(signum, frame):
 
 
 
-def init_recognizer(queue_in: Queue, queue_out: Queue, sockets_id):
+def init_recognizer(queue_in: Queue, queue_out: Queue, sockets_id, stdin_fn):
     global _resources_initialized
 
     logger.info("识别子进程启动")
     logger.debug(f"系统平台: {system()}")
+    sys.stdin=os.fdopen(stdin_fn)
 
     # 注册信号处理器
     signal.signal(signal.SIGINT, signal_handler)
@@ -125,10 +127,6 @@ def init_recognizer(queue_in: Queue, queue_out: Queue, sockets_id):
 
     console.print(f'模型加载耗时 {time.time() - t1 :.2f}s', end='\n\n')
 
-    # 清空物理内存工作集
-    if system() == 'Windows':
-        empty_current_working_set()
-        logger.debug("已清空物理内存工作集")
 
     queue_out.put(True)  # 通知主进程加载完了
     logger.info("识别器初始化完成，开始处理任务")

@@ -62,6 +62,7 @@ hiddenimports += [
     'rich',
     'rich.console',
     'rich.markdown',
+    'rich._unicode_data.unicode17-0-0',
     'keyboard',
     'pyclip',
     'numpy',
@@ -106,8 +107,7 @@ for name, src, type in a_1.binaries:
         ('\\cuda\\v' in src_lower and '\\bin\\' in src_lower)
     )
     is_unwanted_onnx_dll = (
-        'onnxruntime_providers_cuda.dll' in name.lower() or
-        'directml.dll' in name.lower()
+        'onnxruntime_providers_cuda.dll' in name.lower() 
     )
 
     if not is_system_cuda_dll and not is_unwanted_onnx_dll:
@@ -156,7 +156,7 @@ a_2.binaries = filtered_binaries
 
 
 # 排除不要打包的模块（这些将作为源文件复制）
-private_module = ['util', 'config', 'LLM', 
+private_module = ['util', 'config_client', 'config_server', 'LLM', 
                   'core_server',
                   'core_client',
                   ]
@@ -243,10 +243,12 @@ coll = COLLECT(
 
 # 复制额外所需的文件（只复制用户自己写的文件）
 my_files = [
-    'config.py',
+    'config_client.py',
+    'config_server.py',
     'core_server.py',
     'core_client.py',
     'hot.txt',
+    'hot-server.txt',
     'hot-rectify.txt',
     'hot-rule.txt',
     'readme.md'
@@ -281,7 +283,7 @@ from platform import system
 from subprocess import run
 
 if system() == 'Windows':
-    link_folders = ['models', 'assets', 'util', 'LLM', '2026', 'log']  # 不再链接 util，因为 util 已经被复制
+    link_folders = ['models', 'assets', 'util', 'LLM',  'log']  # 不再链接 util，因为 util 已经被复制
     for folder in link_folders:
         if not exists(folder):
             continue

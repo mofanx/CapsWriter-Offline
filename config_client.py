@@ -3,31 +3,10 @@ from collections.abc import Iterable
 from pathlib import Path
 
 # 版本信息
-__version__ = '2.3'
+__version__ = '2.4'
 
 # 项目根目录
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-
-# 服务端配置
-class ServerConfig:
-    addr = '0.0.0.0'
-    port = '6016'
-
-    # 语音模型选择：'fun_asr_nano', 'sensevoice', 'paraformer'
-    model_type = 'fun_asr_nano'
-
-    format_num = True       # 输出时是否将中文数字转为阿拉伯数字
-    format_spell = True     # 输出时是否调整中英之间的空格
-
-    enable_tray = True        # 是否启用托盘图标功能
-
-    # GPU 加速配置（仅针对 Fun-ASR-Nano-GGUF 模型有效）
-    vulkan_enable     = True    # 是否启用 Vulkan 加速 GPU 推理
-    vulkan_force_fp32 = False   # 是否强制 FP32 计算（如果 GPU 是 Intel 集显且出现精度溢出，可设为 True）
-
-    # 日志配置
-    log_level = 'INFO'        # 日志级别：'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'
 
 
 # 客户端配置
@@ -68,7 +47,7 @@ class ClientConfig:
     traditional_convert = False     # 是否将识别结果转换为繁体中文
     traditional_locale = 'zh-hant'  # 繁体地区：'zh-hant'（标准繁体）, 'zh-tw'（台湾繁体）, 'zh-hk'（香港繁体）
 
-    hot = False                 # 是否启用热词替换（统一 RAG 匹配）
+    hot = True                 # 是否启用热词替换（统一 RAG 匹配）
     hot_thresh = 0.85           # RAG 替换热词阈值（高阈值，用于实际替换）
     hot_similar = 0.6           # RAG 相似热词阈值（低阈值，用于 LLM 上下文）
     hot_rectify = 0.6           # 纠错历史 RAG 匹配阈值（低阈值，用于 LLM 上下文）
@@ -105,7 +84,7 @@ class ClientConfig:
 
 
 # 快捷键配置说明
-"""
+r"""
 快捷键配置字段说明：
   key        - 按键名称（见下方可用按键列表）
   type       - 输入类型：'keyboard'（键盘）或 'mouse'（鼠标）
