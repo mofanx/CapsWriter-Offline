@@ -19,9 +19,10 @@ class ClientConfig:
         {
             'key': 'caps_lock',     # 监听大写锁定键
             'type': 'keyboard',     # 是键盘快捷键
-            'suppress': True,      # 不阻塞按键（但录音结束会补发）
+            'suppress': True,      # 阻塞按键
             'hold_mode': True,      # 长按模式
-            'enabled': True         # 启用此快捷键
+            'enabled': True,         # 启用此快捷键
+            'restore_key': True     # 自动检测是否需要恢复
         },
         {
             'key': 'x2',
@@ -86,11 +87,13 @@ class ClientConfig:
 # 快捷键配置说明
 r"""
 快捷键配置字段说明：
-  key        - 按键名称（见下方可用按键列表）
-  type       - 输入类型：'keyboard'（键盘）或 'mouse'（鼠标）
-  suppress   - 是否阻塞按键（True=阻塞，False=不阻塞）
-  hold_mode  - 长按模式（True=按下录音松开停止，False=单击开始再次单击停止）
-  enabled    - 是否启用此快捷键
+  key         - 按键名称（见下方可用按键列表）
+  type        - 输入类型：'keyboard'（键盘）或 'mouse'（鼠标）
+  suppress    - 是否阻塞按键（True=阻塞，False=不阻塞）
+  hold_mode   - 长按模式（True=按下录音松开停止，False=单击开始再次单击停止）
+  enabled     - 是否启用此快捷键
+  restore_key - 识别后是否自动补发按键恢复状态（None=自动检测, True=强制恢复, False=不恢复）
+                CapsLock 等切换键默认自动恢复；Alt 等修饰键无需恢复
 
 阻塞模式说明：
   - 阻塞模式  ：长按录音识别，短按（<0.3秒）则自动补发按键，不影响单击功能
@@ -124,7 +127,8 @@ r"""
   鼠标键：x1, x2
 
 示例配置：
-  {'key': 'caps_lock', 'type': 'keyboard', 'suppress': False, 'hold_mode': True, 'enabled': True}, 
+  {'key': 'caps_lock', 'type': 'keyboard', 'suppress': False, 'hold_mode': True, 'enabled': True},
+  {'key': 'alt_r', 'type': 'keyboard', 'suppress': False, 'hold_mode': True, 'enabled': True, 'restore_key': False},
   {'key': 'f12', 'type': 'keyboard', 'suppress': True, 'hold_mode': True, 'enabled': True}, 
   {'key': 'x2', 'type': 'mouse', 'suppress': True, 'hold_mode': True, 'enabled': True}, 
 """

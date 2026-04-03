@@ -166,6 +166,11 @@ class KeyMapper:
             'win': 'windows',
             'caps lock': 'caps lock',
             'capslock': 'caps lock',
+            # 右侧修饰键：keyboard 库使用 'right xxx' 格式
+            'alt r': 'right alt',
+            'ctrl r': 'right ctrl',
+            'shift r': 'right shift',
+            'cmd r': 'right windows',
         }
         return aliases.get(name, name)
 
@@ -179,9 +184,13 @@ class KeyMapper:
             'caps lock': 'caps_lock',
             'capslock': 'caps_lock',
             'left windows': 'cmd',
-            'right windows': 'cmd',
+            'right windows': 'cmd_r',
             'windows': 'cmd',
             'control': 'ctrl',
+            # 右侧修饰键：keyboard 库 → 内部名称
+            'right alt': 'alt_r',
+            'right ctrl': 'ctrl_r',
+            'right shift': 'shift_r',
         }
         name = aliases.get(name, name)
         return name.replace(' ', '_')

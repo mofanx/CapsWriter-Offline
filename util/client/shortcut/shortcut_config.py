@@ -33,6 +33,7 @@ class Shortcut:
     hold_mode: bool = True
     threshold: Optional[float] = None  # None 表示使用 Config.threshold
     enabled: bool = True
+    restore_key: Optional[bool] = None  # 识别后是否自动补发按键恢复状态。None=自动检测(切换键自动恢复), True=强制恢复, False=不恢复
 
     # 鼠标特定配置
     mouse_button: Literal['x1', 'x2'] = 'x2'  # 仅当 type='mouse' 时有效
@@ -94,8 +95,14 @@ class Shortcut:
         Returns:
             bool: 是否是切换型按键
 
-        注意：使用 RESTORABLE_KEYS 常量定义可恢复的按键
+        注意：
+            - restore_key=True  → 强制恢复
+            - restore_key=False → 不恢复
+            - restore_key=None  → 自动检测（CapsLock/NumLock/ScrollLock 自动恢复）
         """
+        if self.restore_key is not None:
+            return self.restore_key
+
         from util.client.shortcut.key_mapper import RESTORABLE_KEYS
 
         # 检查 key 是否包含可恢复的切换键

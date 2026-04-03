@@ -131,8 +131,9 @@ class ShortcutManager:
     def _keyboard_keydown(self, key_name: str) -> None:
         if self._emulator.is_emulating(key_name):
             return
-        if self.is_restoring(key_name):
-            return
+        # 注意：不再检查 is_restoring，因为 is_emulating 已足以过滤模拟按键。
+        # 原来的 is_restoring 检查会在 schedule_restore 的 50ms 等待期间
+        # 误拦截用户的真实按键，导致"按键偶尔无效"。
 
         task = self.tasks.get(key_name)
         if not task:
@@ -145,9 +146,9 @@ class ShortcutManager:
             self._emulator.clear_emulating_flag(key_name)
             return
 
-        if self.is_restoring(key_name):
-            self.clear_restoring_flag(key_name)
-            return
+        # 注意：不再检查 is_restoring 拦截 keyup。
+        # 模拟按键的 keyup 已由 is_emulating 处理；
+        # 拦截真实 keyup 会导致 hold_mode 下录音无法停止。
 
         task = self.tasks.get(key_name)
         if not task:
